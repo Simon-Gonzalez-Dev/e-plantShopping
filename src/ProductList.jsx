@@ -5,15 +5,24 @@ import CartItem from './CartItem';
 
 import './ProductList.css';
 
-function ProductList({ onHomeClick }) {
-  const [showCart, setShowCart] = useState(false);
+function ProductList({ 
+  onHomeClick, 
+  onProductsClick, 
+  onCartClick, 
+  onContinueShopping,
+  showCart = false 
+}) {
   const [notification, setNotification] = useState(''); // State Notification
+  const [addedToCartItems, setAddedToCartItems] = useState({}); // Track added items
   const dispatch = useDispatch();
   const cart = useSelector((state) => state.cart.items);
 
+  // Calculate total quantity of items in cart
+  const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
+
   const plantsArray = [
     {
-      category: "Featured Plants",
+      category: "Indoor Plants",
       plants: [
         {
           name: "Snake Plant",
@@ -32,13 +41,12 @@ function ProductList({ onHomeClick }) {
           image: "https://cdn.pixabay.com/photo/2019/06/12/14/14/peace-lilies-4269365_1280.jpg",
           description: "Removes mold spores and purifies the air.",
           cost: "$18"
-        },
-        {
-          name: "Boston Fern",
-          image: "https://cdn.pixabay.com/photo/2020/04/30/19/52/boston-fern-5114414_1280.jpg",
-          description: "Adds humidity to the air and removes toxins.",
-          cost: "$20"
-        },
+        }
+      ]
+    },
+    {
+      category: "Fragrant Plants",
+      plants: [
         {
           name: "Lavender",
           image: "https://images.unsplash.com/photo-1611909023032-2d6b3134ecba?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.0.3",
@@ -50,18 +58,23 @@ function ProductList({ onHomeClick }) {
           image: "https://images.unsplash.com/photo-1592729645009-b96d1e63d14b?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.0.3",
           description: "Sweet fragrance, promotes relaxation.",
           cost: "$18"
-        },
-        {
-          name: "Oregano",
-          image: "https://cdn.pixabay.com/photo/2015/05/30/21/20/oregano-790702_1280.jpg",
-          description: "Contains compounds that deter insects.",
-          cost: "$10"
-        },
+        }
+      ]
+    },
+    {
+      category: "Medicinal Plants",
+      plants: [
         {
           name: "Aloe Vera",
           image: "https://cdn.pixabay.com/photo/2018/04/02/07/42/leaf-3283175_1280.jpg",
           description: "Purifies the air and has healing properties for skin.",
           cost: "$14"
+        },
+        {
+          name: "Echeveria",
+          image: "https://cdn.pixabay.com/photo/2018/02/08/22/27/flower-3140492_1280.jpg",
+          description: "Drought-resistant rosette-shaped succulent.",
+          cost: "$12"
         }
       ]
     }
@@ -82,7 +95,8 @@ function ProductList({ onHomeClick }) {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '1100px'
+    width: '80%',
+    maxWidth: '800px'
   };
 
   const styleA = {
@@ -98,17 +112,12 @@ function ProductList({ onHomeClick }) {
 
   const handleCartClick = (e) => {
     e.preventDefault();
-    setShowCart(true);
+    onCartClick();
   };
 
   const handlePlantsClick = (e) => {
     e.preventDefault();
-    setShowCart(false);
-  };
-
-  const handleContinueShopping = (e) => {
-    e.preventDefault();
-    setShowCart(false);
+    onProductsClick();
   };
 
   // Dispatch action and show a fixed notification for 3 seconds
@@ -121,14 +130,26 @@ function ProductList({ onHomeClick }) {
       quantity: 1,
       image: plant.image
     }));
+    
+    // Mark this item as added to cart
+    setAddedToCartItems(prev => ({
+      ...prev,
+      [plant.name]: true
+    }));
+    
     setNotification(`${plant.name} added to cart!`);
     setTimeout(() => {
       setNotification('');
     }, 3000);
   };
 
+  // Check if a plant is already in the cart
+  const isInCart = (plantName) => {
+    return addedToCartItems[plantName] || false;
+  };
+
   return (
-    <div>
+    <div className="product-list-container">
       <div className="navbar" style={styleObj}>
         <div className="tag">
           <div className="luxury">
@@ -171,6 +192,9 @@ function ProductList({ onHomeClick }) {
                     strokeWidth="2"
                   ></path>
                 </svg>
+                {cartItemCount > 0 && (
+                  <span className="cart-count">{cartItemCount}</span>
+                )}
               </h1>
             </a>
           </div>
@@ -215,8 +239,12 @@ function ProductList({ onHomeClick }) {
                       <h3>{plant.name}</h3>
                       <p>{plant.description}</p>
                       <p className="plant-cost">{plant.cost}</p>
-                      <button onClick={() => handleAddToCart(plant)}>
-                        Add to Cart
+                      <button 
+                        onClick={() => handleAddToCart(plant)}
+                        disabled={isInCart(plant.name)}
+                        className={isInCart(plant.name) ? "button-disabled" : ""}
+                      >
+                        {isInCart(plant.name) ? "Added to Cart" : "Add to Cart"}
                       </button>
                     </div>
                   </div>
@@ -226,7 +254,7 @@ function ProductList({ onHomeClick }) {
           ))}
         </div>
       ) : (
-        <CartItem onContinueShopping={handleContinueShopping} />
+        <CartItem onContinueShopping={onContinueShopping} />
       )}
     </div>
   );
